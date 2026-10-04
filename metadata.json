@@ -1,0 +1,6 @@
+{
+  "name": "Oh Maw Cookies - Artisan Chunky Cookies",
+  "description": "Toko online resmi Oh Maw Cookies. Nikmati soft chunky cookies fresh from the oven dengan varian Clasic, Kukimonster, Redvelvet, Double Choco, dan Matcha.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
