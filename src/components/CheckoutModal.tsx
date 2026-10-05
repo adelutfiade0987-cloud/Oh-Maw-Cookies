@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, CheckCircle, Truck, Store, QrCode, CreditCard, Banknote, ShieldAlert, ArrowRight, MessageCircle } from 'lucide-react';
 import { CartItem, OrderForm, PlacedOrder } from '../types/cookie';
-import { OWNER_CONFIG } from '../data/cookies';
+import { OWNER_CONFIG, PAYMENT_CONFIG } from '../data/cookies';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -112,7 +112,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       (discount > 0 ? `• Diskon: -${formatRupiah(discount)}%0A` : '') +
       `• Ongkir: ${formatRupiah(deliveryFee)}%0A` +
       `• *TOTAL PEMBAYARAN: ${formatRupiah(grandTotal)}*%0A` +
-      `• Metode Bayar: ${formData.paymentMethod.toUpperCase()}%0A` +
+      `• *Metode Bayar:* ${
+        formData.paymentMethod === 'qris'
+          ? 'QRIS (OH MAW COOKIES - ID1025454373404)'
+          : formData.paymentMethod === 'bank_transfer'
+          ? 'TRANSFER BSI 7166834087 a.n. Ikrima'
+          : 'COD (Bayar di Tempat)'
+      }%0A` +
       (formData.notes ? `• Catatan: ${encodeURIComponent(formData.notes)}%0A` : '') +
       `--------------------------------------------------%0A` +
       `Halo Owner Maw Cookies (${OWNER_CONFIG.phoneDisplay}), saya ingin konfirmasi pesanan ini ya. Terima kasih!`;
@@ -286,11 +292,26 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500">
               4. Metode Pembayaran
             </h3>
-            <div className="grid grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               {[
-                { id: 'qris' as const, label: 'QRIS Instant', desc: 'Gopay/OVO/BCA/Dana', icon: QrCode },
-                { id: 'bank_transfer' as const, label: 'Transfer Bank', desc: 'BCA / Mandiri', icon: CreditCard },
-                { id: 'cod' as const, label: 'COD (Bayar di Tempat)', desc: 'Tunai saat kurir tiba', icon: Banknote },
+                {
+                  id: 'qris' as const,
+                  label: 'QRIS Nasional',
+                  desc: 'OH MAW COOKIES (NMID: ID1025454373404)',
+                  icon: QrCode,
+                },
+                {
+                  id: 'bank_transfer' as const,
+                  label: 'Transfer BSI',
+                  desc: '7166834087 a.n. Ikrima',
+                  icon: CreditCard,
+                },
+                {
+                  id: 'cod' as const,
+                  label: 'COD (Bayar di Tempat)',
+                  desc: 'Bayar tunai ke kurir saat tiba',
+                  icon: Banknote,
+                },
               ].map((p) => {
                 const Icon = p.icon;
                 const isSelected = formData.paymentMethod === p.id;
@@ -307,19 +328,52 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   >
                     <Icon className={`w-4 h-4 mb-1.5 ${isSelected ? 'text-[#2C5282]' : 'text-stone-500'}`} />
                     <div className="text-xs font-bold text-stone-900">{p.label}</div>
-                    <div className="text-[10px] text-stone-500 mt-0.5">{p.desc}</div>
+                    <div className="text-[10px] text-stone-500 mt-0.5 line-clamp-1">{p.desc}</div>
                   </button>
                 );
               })}
             </div>
 
             {formData.paymentMethod === 'qris' && (
-              <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 text-xs flex items-center gap-3">
-                <QrCode className="w-8 h-8 text-[#2C5282] shrink-0" />
-                <div>
-                  <div className="font-bold text-stone-900">QRIS Dinamis Otomatis</div>
-                  <div className="text-[11px] text-stone-500">Kode QRIS akan langsung muncul di layar setelah klik konfirmasi pesanan.</div>
+              <div className="p-3.5 bg-rose-50/50 rounded-2xl border border-rose-200/80 text-xs flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-[#DE2839] text-white flex items-center justify-center font-black text-xs shrink-0">
+                    QRIS
+                  </div>
+                  <div>
+                    <div className="font-bold text-stone-900">QRIS Resmi: OH MAW COOKIES</div>
+                    <div className="text-[11px] text-stone-600 font-mono">
+                      NMID: ID1025454373404 (Satu QRIS untuk Seluruh Bank & E-Wallet)
+                    </div>
+                  </div>
                 </div>
+                <span className="text-[10px] font-bold text-[#DE2839] bg-white px-2 py-1 rounded-lg border border-rose-200 shrink-0">
+                  Scan di Halaman Sukses
+                </span>
+              </div>
+            )}
+
+            {formData.paymentMethod === 'bank_transfer' && (
+              <div className="p-3.5 bg-emerald-50/60 rounded-2xl border border-emerald-200/80 text-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-bold text-stone-900 text-sm">
+                      {PAYMENT_CONFIG.bsi.bankName}
+                    </div>
+                    <div className="text-[11px] text-stone-600">
+                      a.n. <strong className="text-stone-900">{PAYMENT_CONFIG.bsi.accountHolder}</strong>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-emerald-900 text-sm bg-white px-2.5 py-1 rounded-lg border border-emerald-200">
+                      {PAYMENT_CONFIG.bsi.accountNumber}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-[10px] text-stone-500">
+                  Kode Bank BSI: <strong>451</strong> (Bisa transfer dari BCA, Mandiri, BRI, BNI atau e-wallet).
+                </p>
               </div>
             )}
           </div>

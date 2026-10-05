@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { CheckCircle2, MessageCircle, Copy, Check, QrCode, Clock, Share2, ChefHat, Sparkles, MapPin } from 'lucide-react';
+import { CheckCircle2, MessageCircle, Copy, Check, QrCode, Clock, Share2, ChefHat, Sparkles, MapPin, CreditCard } from 'lucide-react';
 import { PlacedOrder } from '../types/cookie';
-import { OWNER_CONFIG } from '../data/cookies';
+import { OWNER_CONFIG, PAYMENT_CONFIG } from '../data/cookies';
+import { OfficialQrisCard } from './OfficialQrisCard';
 
 interface OrderSuccessModalProps {
   order: PlacedOrder | null;
@@ -43,6 +44,13 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ order, onC
     })
     .join('%0A');
 
+  const paymentLabel =
+    order.customer.paymentMethod === 'qris'
+      ? 'QRIS (OH MAW COOKIES - ID1025454373404)'
+      : order.customer.paymentMethod === 'bank_transfer'
+      ? 'TRANSFER BSI 7166834087 a.n. Ikrima'
+      : 'COD (Bayar di Tempat)';
+
   const waText =
     `🔔 *NOTIFIKASI / BROADCAST PESANAN BARU OH MAW COOKIES* 🔔%0A` +
     `--------------------------------------------------%0A` +
@@ -60,7 +68,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ order, onC
     (order.discount > 0 ? `• Diskon: -${formatRupiah(order.discount)}%0A` : '') +
     `• Ongkir: ${formatRupiah(order.deliveryFee)}%0A` +
     `• *TOTAL AKHIR: ${formatRupiah(order.total)}*%0A` +
-    `• Metode Pembayaran: ${order.customer.paymentMethod.toUpperCase()}%0A` +
+    `• *Metode Bayar:* ${encodeURIComponent(paymentLabel)}%0A` +
     (order.customer.notes ? `• Catatan: ${encodeURIComponent(order.customer.notes)}%0A` : '') +
     `--------------------------------------------------%0A` +
     `Kitchen: ${encodeURIComponent(OWNER_CONFIG.kitchenAddress)}%0A` +
@@ -89,7 +97,8 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ order, onC
       `Nama: ${order.customer.customerName} (${order.customer.phoneNumber})\n` +
       `Alamat: ${order.customer.address || OWNER_CONFIG.kitchenAddress}\n` +
       `Rincian Menu:\n${rawItems}\n` +
-      `Total: ${formatRupiah(order.total)} (${order.customer.paymentMethod.toUpperCase()})\n` +
+      `Total: ${formatRupiah(order.total)}\n` +
+      `Pembayaran: ${paymentLabel}\n` +
       `Kitchen: ${OWNER_CONFIG.kitchenAddress}`;
 
     navigator.clipboard.writeText(rawText);
@@ -188,64 +197,85 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ order, onC
             </div>
           </div>
 
-          {/* Payment Instructions */}
+          {/* Payment Section: QRIS Official Card or BSI Bank Transfer */}
           {order.customer.paymentMethod === 'qris' && (
-            <div className="p-4 rounded-2xl bg-[#FFFDF9] border border-stone-200 text-center space-y-3">
-              <div className="font-bold text-stone-900 flex items-center justify-center gap-1.5">
-                <QrCode className="w-4 h-4 text-[#2C5282]" />
-                <span>Pindai QRIS Resmi Oh Maw Cookies</span>
+            <div className="p-4 sm:p-5 rounded-3xl bg-[#FAF7F2] border border-amber-900/10 flex flex-col items-center">
+              <div className="text-center mb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200">
+                  Scan QRIS Nasional
+                </span>
+                <p className="text-xs text-stone-600 mt-1">
+                  Buka aplikasi mobile banking atau e-wallet kamu, lalu scan QRIS di bawah:
+                </p>
               </div>
-              <div className="w-40 h-40 mx-auto bg-white p-3 rounded-xl border border-stone-300 shadow-sm flex flex-col items-center justify-center">
-                <svg viewBox="0 0 100 100" className="w-full h-full text-stone-900">
-                  <path
-                    fill="currentColor"
-                    d="M0 0h35v35H0V0zm5 5v25h25V5H5zm5 5h15v15H10V10zm55-10h35v35H65V0zm5 5v25h25V5H70zm5 5h15v15H75V10zM0 65h35v35H0V65zm5 5v25h25V70H5zm5 5h15v15H10V75zm50-10h10v10H60V65zm25 0h15v10H85V65zm-15 15h15v10H70V80zm20 0h10v20H90V80zm-40 0h15v15H50V80zm10 15h15v5H60V95zm-20-50h10v10H40V45zm20 0h10v10H60V45zm-10 15h10v15H50V60z"
-                  />
-                </svg>
-                <span className="text-[9px] font-mono text-stone-500 mt-1">NMID: ID1029384756</span>
+
+              {/* Official QRIS Card Component */}
+              <OfficialQrisCard amount={order.total} />
+
+              <div className="mt-4 w-full text-center">
+                {!isPaidSimulated ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsPaidSimulated(true)}
+                    className="w-full max-w-xs mx-auto py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+                  >
+                    Saya Sudah Scan & Bayar
+                  </button>
+                ) : (
+                  <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-200">
+                    <Check className="w-4 h-4 text-emerald-600" />
+                    <span>Konfirmasi bayar QRIS tercatat! Bukti siap diteruskan ke WhatsApp owner.</span>
+                  </div>
+                )}
               </div>
-              <div className="text-base font-extrabold text-[#2C5282] tabular-nums">
-                {formatRupiah(order.total)}
-              </div>
-              <p className="text-[11px] text-stone-500">
-                Mendukung Gopay, ShopeePay, OVO, Dana, BCA Mobile & Semua Bank
-              </p>
-              {!isPaidSimulated ? (
-                <button
-                  type="button"
-                  onClick={() => setIsPaidSimulated(true)}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
-                >
-                  Saya Sudah Scan & Bayar
-                </button>
-              ) : (
-                <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
-                  <Check className="w-4 h-4" />
-                  <span>Bukti bayar tersimpan!</span>
-                </div>
-              )}
             </div>
           )}
 
           {order.customer.paymentMethod === 'bank_transfer' && (
-            <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200 space-y-3">
-              <span className="font-bold text-stone-900 block">Nomor Rekening Pembayaran:</span>
-              <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-stone-200">
+            <div className="p-5 rounded-3xl bg-stone-50 border border-stone-200 space-y-3.5">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-[#2C5282]" />
+                <span className="font-bold text-stone-900 text-sm">
+                  Rekening Transfer Bank Syariah Indonesia (BSI)
+                </span>
+              </div>
+
+              <div className="p-4 bg-white rounded-2xl border border-emerald-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <div className="font-bold text-stone-900">BCA - 8405-1234-99</div>
-                  <div className="text-[10px] text-stone-500">a.n. Oh Maw Cookies Bakery</div>
+                  <div className="text-xs font-semibold text-stone-500">
+                    {PAYMENT_CONFIG.bsi.bankName} (Kode: {PAYMENT_CONFIG.bsi.bankCode})
+                  </div>
+                  <div className="text-lg font-mono font-black text-stone-900 tracking-wider">
+                    {PAYMENT_CONFIG.bsi.accountNumber}
+                  </div>
+                  <div className="text-xs text-emerald-800 font-semibold mt-0.5">
+                    a.n. <strong className="text-stone-900">{PAYMENT_CONFIG.bsi.accountHolder}</strong>
+                  </div>
                 </div>
+
                 <button
-                  onClick={() => copyToClipboard('8405123499', 'bca')}
-                  className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 rounded-lg text-xs font-bold text-stone-700 flex items-center gap-1 cursor-pointer"
+                  onClick={() => copyToClipboard(PAYMENT_CONFIG.bsi.accountNumber, 'bsi')}
+                  className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  {copiedAccount === 'bca' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedAccount === 'bca' ? 'Tersalin' : 'Salin'}</span>
+                  {copiedAccount === 'bsi' ? (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-600" />
+                      <span>Rekening Tersalin!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 text-emerald-700" />
+                      <span>Salin No. Rekening BSI</span>
+                    </>
+                  )}
                 </button>
               </div>
 
-              <div className="text-right text-xs">
-                Total Transfer: <strong className="text-sm text-[#2C5282]">{formatRupiah(order.total)}</strong>
+              <div className="flex items-center justify-between p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs">
+                <span className="text-amber-900">Total yang harus ditransfer:</span>
+                <span className="text-base font-black text-[#2C5282] font-mono tabular-nums">
+                  {formatRupiah(order.total)}
+                </span>
               </div>
             </div>
           )}

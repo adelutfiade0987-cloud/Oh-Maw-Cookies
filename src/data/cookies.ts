@@ -10,6 +10,25 @@ export const OWNER_CONFIG = {
   openingHours: '10:00 - 20:00 WIB',
 };
 
+export const PAYMENT_CONFIG = {
+  bsi: {
+    bankName: 'Bank Syariah Indonesia (BSI)',
+    accountNumber: '7166834087',
+    accountHolder: 'Ikrima',
+    bankCode: '451',
+  },
+  qris: {
+    merchantName: 'OH MAW COOKIES',
+    nmid: 'ID1025454373404',
+    terminal: 'A01',
+    printedBy: '93600914',
+    printVersion: 'v0.0.2025.11.15',
+    aspiUrl: 'www.aspi-qris.id',
+    // Exact EMVCo QRIS payload representation for scanning
+    qrPayload: '00020101021126590014ID.LINKAJA.WWW011893600914102545437302081025454351440014ID.GO.QRIS.WWW0215ID10254543734040303UMI5204581253033605802ID5914OH MAW COOKIES6013JAKARTA UTARA61051433062070703A016304CA1B',
+  },
+};
+
 export const COOKIE_PRODUCTS: CookieProduct[] = [
   {
     id: 'clasic',
