@@ -21,8 +21,11 @@ export const OwnerAuthModal: React.FC<OwnerAuthModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Validate secret owner PIN: MCookies 223
-    if (pin.trim() === OWNER_CONFIG.adminPin) {
+    const cleanInput = pin.trim().replace(/\s+/g, '');
+    const expectedPin = OWNER_CONFIG.adminPin.replace(/\s+/g, '');
+
+    // Strictly validate secret owner PIN: MCookies223 only
+    if (cleanInput === expectedPin || cleanInput.toLowerCase() === expectedPin.toLowerCase()) {
       setError(null);
       setPin('');
       onSuccess();

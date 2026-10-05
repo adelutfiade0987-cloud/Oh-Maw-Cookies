@@ -290,7 +290,7 @@ export default function App() {
               className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 hover:text-amber-200 border border-amber-500/40 rounded-lg font-semibold transition-all cursor-pointer shadow-2xs"
             >
               <Lock className="w-3 h-3 text-amber-400" />
-              <span>Masuk Portal Owner (PIN: MCookies 223)</span>
+              <span>Masuk Portal Owner</span>
             </button>
           </div>
         </div>
