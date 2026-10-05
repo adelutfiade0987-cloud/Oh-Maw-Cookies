@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { CookieCard } from './components/CookieCard';
@@ -10,15 +10,49 @@ import { OrderSuccessModal } from './components/OrderSuccessModal';
 import { WarmingGuide } from './components/WarmingGuide';
 import { ReviewsSection } from './components/ReviewsSection';
 import { Footer } from './components/Footer';
-import { COOKIE_PRODUCTS, TASTER_BOX_BUNDLE } from './data/cookies';
+import { OwnerAuthModal } from './components/OwnerAuthModal';
+import { OwnerDashboard } from './components/OwnerDashboard';
+import { COOKIE_PRODUCTS, TASTER_BOX_BUNDLE, INITIAL_RECENT_ORDERS, OWNER_CONFIG } from './data/cookies';
 import { CookieProduct, CartItem, PlacedOrder } from './types/cookie';
-import { Sparkles, ShoppingBag, Search, Gift, ArrowRight, Check } from 'lucide-react';
+import { Sparkles, ShoppingBag, Search, Gift, ArrowRight, Check, Shield, Lock } from 'lucide-react';
 import { CookieVisual } from './components/CookieVisual';
 
 export default function App() {
   const [products] = useState<CookieProduct[]>(COOKIE_PRODUCTS);
   const [activeFilter, setActiveFilter] = useState<'all' | 'bestseller' | 'new' | 'bundles'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Mode: 'buyer' | 'owner'
+  const [activeMode, setActiveMode] = useState<'buyer' | 'owner'>('buyer');
+  const [isOwnerAuthenticated, setIsOwnerAuthenticated] = useState<boolean>(() => {
+    return sessionStorage.getItem('maw_owner_auth') === 'true';
+  });
+  const [isOwnerAuthModalOpen, setIsOwnerAuthModalOpen] = useState(false);
+
+  // Orders State (synced with localStorage)
+  const [orders, setOrders] = useState<PlacedOrder[]>(() => {
+    const saved = localStorage.getItem('maw_cookies_orders');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      } catch (e) {
+        console.error('Failed to parse saved orders', e);
+      }
+    }
+    return INITIAL_RECENT_ORDERS;
+  });
+
+  // Save orders to localStorage on changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('maw_cookies_orders', JSON.stringify(orders));
+    } catch (e) {
+      console.error('Failed to save orders to localStorage', e);
+    }
+  }, [orders]);
 
   // Cart State
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -40,6 +74,38 @@ export default function App() {
     setTimeout(() => {
       setToastMessage(null);
     }, 2800);
+  };
+
+  // Switch to Owner Portal Handler
+  const handleOpenOwnerPortal = () => {
+    if (isOwnerAuthenticated) {
+      setActiveMode('owner');
+    } else {
+      setIsOwnerAuthModalOpen(true);
+    }
+  };
+
+  const handleOwnerAuthSuccess = () => {
+    setIsOwnerAuthenticated(true);
+    sessionStorage.setItem('maw_owner_auth', 'true');
+    setIsOwnerAuthModalOpen(false);
+    setActiveMode('owner');
+    showToast('✓ Berhasil masuk ke Portal Owner');
+  };
+
+  const handleOwnerLogout = () => {
+    setIsOwnerAuthenticated(false);
+    sessionStorage.removeItem('maw_owner_auth');
+    setActiveMode('buyer');
+    showToast('✓ Telah keluar dari Portal Owner');
+  };
+
+  // Update order status in Owner dashboard
+  const handleUpdateOrderStatus = (orderId: string, newStatus: PlacedOrder['status']) => {
+    setOrders((prev) =>
+      prev.map((o) => (o.orderId === orderId ? { ...o, status: newStatus } : o))
+    );
+    showToast(`✓ Status order #${orderId} diperbarui: ${newStatus}`);
   };
 
   // Add single cookie to cart
@@ -168,9 +234,32 @@ export default function App() {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(val);
   };
 
+  // IF OWNER MODE IS ACTIVE: Render dedicated Owner Dashboard
+  if (activeMode === 'owner') {
+    return (
+      <>
+        {toastMessage && (
+          <div className="fixed top-20 right-4 z-50 bg-stone-900 text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-xl border border-stone-700 flex items-center gap-2 animate-in slide-in-from-top-3 duration-200">
+            <Check className="w-4 h-4 text-emerald-400" />
+            <span>{toastMessage}</span>
+          </div>
+        )}
+
+        <OwnerDashboard
+          orders={orders}
+          onUpdateOrderStatus={handleUpdateOrderStatus}
+          onSwitchToBuyerMode={() => setActiveMode('buyer')}
+          onLogout={handleOwnerLogout}
+        />
+      </>
+    );
+  }
+
+  // BUYER MODE (Default Storefront Experience)
   return (
     <div className="min-h-screen bg-[#FAF7F2] flex flex-col text-stone-900">
       {/* Toast Notification */}
@@ -186,6 +275,7 @@ export default function App() {
         cartCount={totalCartCount}
         onOpenCart={() => setIsCartOpen(true)}
         onOpenBoxBuilder={() => setIsBoxBuilderOpen(true)}
+        onOpenOwnerPortal={handleOpenOwnerPortal}
       />
 
       {/* Main Content Area */}
@@ -226,7 +316,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Functional Filter Tabs (Buttons with click handlers per Section 1.A) */}
+          {/* Functional Filter Tabs */}
           <div className="flex items-center gap-2 pb-6 overflow-x-auto scrollbar-none">
             {[
               { id: 'all' as const, label: 'Semua 5 Varian' },
@@ -419,16 +509,25 @@ export default function App() {
         onOrderSuccess={(order) => {
           setIsCheckoutOpen(false);
           setPlacedOrder(order);
+          // Prepend to orders list for Owner Dashboard
+          setOrders((prev) => [order, ...prev]);
           setCartItems([]); // Clear cart
           setDiscount(0);
           setAppliedCoupon(null);
         }}
       />
 
-      {/* Order Confirmation Modal */}
+      {/* Order Confirmation Modal with WhatsApp link to Owner */}
       <OrderSuccessModal
         order={placedOrder}
         onClose={() => setPlacedOrder(null)}
+      />
+
+      {/* Owner Authentication Modal */}
+      <OwnerAuthModal
+        isOpen={isOwnerAuthModalOpen}
+        onClose={() => setIsOwnerAuthModalOpen(false)}
+        onSuccess={handleOwnerAuthSuccess}
       />
     </div>
   );

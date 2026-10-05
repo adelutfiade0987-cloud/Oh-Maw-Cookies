@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, CheckCircle, Truck, Store, QrCode, CreditCard, Banknote, ShieldAlert, ArrowRight, MessageCircle } from 'lucide-react';
 import { CartItem, OrderForm, PlacedOrder } from '../types/cookie';
+import { OWNER_CONFIG } from '../data/cookies';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -76,7 +77,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
     const newOrder: PlacedOrder = {
       orderId: `MAW-${Math.floor(10000 + Math.random() * 90000)}`,
-      createdAt: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+      createdAt: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
       items,
       subtotal,
       discount,
@@ -85,6 +86,40 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       customer: formData,
       status: 'received',
     };
+
+    // Format broadcast for Owner WhatsApp
+    const itemsList = items
+      .map((it, idx) => {
+        const name = it.type === 'single' ? it.product?.name : it.bundleConfig?.name;
+        return `${idx + 1}. ${name} (${it.quantity}x) = ${formatRupiah(it.unitPrice * it.quantity)}`;
+      })
+      .join('%0A');
+
+    const waText =
+      `🔔 *NOTIFIKASI / BROADCAST PESANAN BARU OH MAW COOKIES* 🔔%0A` +
+      `--------------------------------------------------%0A` +
+      `📋 *ID Pesanan:* %23${newOrder.orderId}%0A` +
+      `⏰ *Waktu Pemesanan:* ${newOrder.createdAt}%0A%0A` +
+      `👤 *DATA PEMESAN:*%0A` +
+      `• Nama: ${encodeURIComponent(formData.customerName)}%0A` +
+      `• WhatsApp: ${encodeURIComponent(formData.phoneNumber)}%0A` +
+      `• Metode: ${formData.deliveryMethod === 'pickup' ? 'Ambil Sendiri di Kitchen' : 'Kurir Delivery'}%0A` +
+      `• Alamat: ${encodeURIComponent(formData.address || OWNER_CONFIG.kitchenAddress)}%0A` +
+      `• Jadwal: ${encodeURIComponent(formData.deliveryDate)} - ${encodeURIComponent(formData.deliveryTimeSlot)}%0A%0A` +
+      `🍪 *DETAIL VARIAN COOKIES:*%0A${itemsList}%0A%0A` +
+      `💵 *RINCIAN PEMBAYARAN:*%0A` +
+      `• Subtotal: ${formatRupiah(subtotal)}%0A` +
+      (discount > 0 ? `• Diskon: -${formatRupiah(discount)}%0A` : '') +
+      `• Ongkir: ${formatRupiah(deliveryFee)}%0A` +
+      `• *TOTAL PEMBAYARAN: ${formatRupiah(grandTotal)}*%0A` +
+      `• Metode Bayar: ${formData.paymentMethod.toUpperCase()}%0A` +
+      (formData.notes ? `• Catatan: ${encodeURIComponent(formData.notes)}%0A` : '') +
+      `--------------------------------------------------%0A` +
+      `Halo Owner Maw Cookies (${OWNER_CONFIG.phoneDisplay}), saya ingin konfirmasi pesanan ini ya. Terima kasih!`;
+
+    // Automatically trigger WhatsApp broadcast link to owner
+    const waUrl = `https://wa.me/${OWNER_CONFIG.phoneWa}?text=${waText}`;
+    window.open(waUrl, '_blank');
 
     onOrderSuccess(newOrder);
   };
@@ -95,11 +130,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         {/* Header */}
         <div className="p-4 sm:p-6 border-b border-stone-100 flex items-center justify-between bg-[#FAF7F2]">
           <div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-emerald-800 mb-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span>Broadcast Otomatis ke WhatsApp Owner ({OWNER_CONFIG.phoneDisplay})</span>
+            </div>
             <h2 className="text-xl sm:text-2xl font-display font-bold text-stone-900">
               Checkout Pesanan Maw Cookies
             </h2>
             <p className="text-xs text-stone-500">
-              Lengkapi data pengiriman untuk cookies fresh langsung ke pintumu
+              Pesanan akan otomatis dirangkum dan diteruskan ke WhatsApp Owner untuk langsung diproses
             </p>
           </div>
           <button
@@ -137,7 +176,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
               <div>
                 <label className="text-xs font-semibold text-stone-700 block mb-1">
-                  Nomor WhatsApp *
+                  Nomor WhatsApp Pemesan *
                 </label>
                 <input
                   type="tel"
@@ -162,7 +201,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               {[
                 { id: 'instant' as const, label: 'Kurir Instan', desc: 'GoSend / GrabExpress (Fresh & Cepat)', icon: Truck },
                 { id: 'sameday' as const, label: 'Paxel Sameday', desc: 'Aman dengan pendingin khusus', icon: Truck },
-                { id: 'pickup' as const, label: 'Ambil Sendiri', desc: 'Kitchen Maw Cookies (Gratis)', icon: Store },
+                { id: 'pickup' as const, label: 'Ambil di Kitchen', desc: 'Jl Sungai Bambu 2B, Tg Priok (Gratis)', icon: Store },
               ].map((m) => {
                 const Icon = m.icon;
                 const isSelected = formData.deliveryMethod === m.id;
@@ -194,7 +233,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   rows={2}
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  placeholder="Jl. Melati No. 12, RT 02/05, Kebayoran Baru (Patokan: Sebelah Indomaret)"
+                  placeholder="Contoh: Jl. Swasembada Timur No. 12, RT 02/05, Kebon Bawang, Tg Priok, Jakarta Utara"
                   className={`w-full px-3.5 py-2 text-xs rounded-xl border bg-stone-50 focus:bg-white focus:outline-none transition-all ${
                     errors.address ? 'border-rose-500' : 'border-stone-200 focus:ring-2 focus:ring-[#2C5282]'
                   }`}
@@ -203,7 +242,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
             ) : (
               <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/60 text-xs text-amber-900">
-                📍 <strong>Alamat Kitchen Maw Cookies:</strong> Jl. Cempaka Putih Timur No. 45, Jakarta Pusat (Buka 10:00 - 20:00 WIB). Cookies akan disiapkan saat kamu tiba!
+                📍 <strong>Alamat Kitchen Maw Cookies:</strong> {OWNER_CONFIG.kitchenAddress} (Buka {OWNER_CONFIG.openingHours}). Cookies hangat akan disiapkan saat kamu tiba!
               </div>
             )}
           </div>
@@ -300,7 +339,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           </div>
         </form>
 
-        {/* Modal Footer with Grand Total */}
+        {/* Modal Footer with Grand Total & WA action indicator */}
         <div className="p-4 sm:p-6 bg-white border-t border-stone-200 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="w-full sm:w-auto flex justify-between sm:block">
             <div className="text-xs text-stone-500">
@@ -313,9 +352,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
           <button
             onClick={handleSubmit}
-            className="w-full sm:w-auto px-8 py-3.5 bg-[#2C5282] hover:bg-[#1E3A8A] text-white rounded-xl font-bold text-sm shadow-md transition-all active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full sm:w-auto px-7 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm shadow-md transition-all active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
           >
-            <span>Konfirmasi & Buat Pesanan</span>
+            <MessageCircle className="w-4 h-4" />
+            <span>Kirim Broadcast ke WA Owner</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

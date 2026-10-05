@@ -1,6 +1,7 @@
 import React from 'react';
 import { MapPin, Phone, Instagram, Clock, Heart } from 'lucide-react';
 import { MawLogo } from './MawLogo';
+import { OWNER_CONFIG } from '../data/cookies';
 
 export const Footer: React.FC = () => {
   return (
@@ -39,12 +40,12 @@ export const Footer: React.FC = () => {
                 <Clock className="w-4 h-4 text-stone-500 shrink-0 mt-0.5" />
                 <div>
                   <span className="text-white block font-medium">Senin - Minggu</span>
-                  <span>10:00 - 20:00 WIB</span>
+                  <span>{OWNER_CONFIG.openingHours}</span>
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-stone-500 shrink-0 mt-0.5" />
-                <span>Jl. Cempaka Putih Timur No. 45, Jakarta Pusat</span>
+                <MapPin className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <span className="text-stone-300">{OWNER_CONFIG.kitchenAddress}</span>
               </div>
             </div>
           </div>
@@ -52,18 +53,18 @@ export const Footer: React.FC = () => {
           {/* Col 4: Hubungi Kami */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400">
-              Layanan Pesanan
+              Layanan Pesanan & Owner
             </h4>
             <div className="space-y-2 text-xs text-stone-400">
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
                 <a
-                  href="https://wa.me/6281234567890"
+                  href={`https://wa.me/${OWNER_CONFIG.phoneWa}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-emerald-400 transition-colors"
+                  className="hover:text-emerald-400 transition-colors font-mono"
                 >
-                  WhatsApp: +62 812-3456-7890
+                  WhatsApp: {OWNER_CONFIG.phoneDisplay}
                 </a>
               </div>
               <div className="flex items-center gap-2">
@@ -71,7 +72,7 @@ export const Footer: React.FC = () => {
                 <span className="text-stone-300">@ohmawcookies</span>
               </div>
               <p className="text-[11px] text-stone-500 pt-2">
-                Melayani pesanan hampers kantor, ulang tahun, arisan, & custom gift box.
+                Semua pesanan otomatis dibuatkan broadcast WhatsApp ke nomor owner.
               </p>
             </div>
           </div>

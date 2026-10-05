@@ -1,17 +1,20 @@
 import React from 'react';
-import { ShoppingBag, MessageCircle, Sparkles } from 'lucide-react';
+import { ShoppingBag, MessageCircle, Sparkles, Shield, Lock } from 'lucide-react';
 import { MawLogo } from './MawLogo';
+import { OWNER_CONFIG } from '../data/cookies';
 
 interface NavbarProps {
   cartCount: number;
   onOpenCart: () => void;
   onOpenBoxBuilder: () => void;
+  onOpenOwnerPortal: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   cartCount,
   onOpenCart,
   onOpenBoxBuilder,
+  onOpenOwnerPortal,
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-[#FAF7F2]/95 backdrop-blur-md border-b border-amber-900/10 transition-colors">
@@ -44,17 +47,27 @@ export const Navbar: React.FC<NavbarProps> = ({
           </a>
         </nav>
 
-        {/* Zone 3: Primary Actions (Cart + Quick WhatsApp) */}
-        <div className="flex items-center gap-3">
+        {/* Zone 3: Primary Actions (Owner Portal + Cart + Quick WhatsApp) */}
+        <div className="flex items-center gap-2.5">
+          {/* Owner Portal Access Button */}
+          <button
+            onClick={onOpenOwnerPortal}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-stone-700 hover:text-[#2C5282] bg-white hover:bg-stone-100 rounded-xl transition-all border border-stone-200/90 shadow-2xs cursor-pointer"
+            title="Masuk ke Portal Owner Oh Maw Cookies"
+          >
+            <Lock className="w-3.5 h-3.5 text-amber-600" />
+            <span className="hidden sm:inline">Portal Owner</span>
+          </button>
+
           <a
-            href="https://wa.me/6281234567890?text=Halo%20Oh%20Maw%20Cookies,%20saya%20ingin%20tanya%20varian%20cookies%20fresh%20hari%20ini"
+            href={`https://wa.me/${OWNER_CONFIG.phoneWa}?text=Halo%20Owner%20Oh%20Maw%20Cookies,%20saya%20ingin%20tanya%20varian%20cookies%20fresh%20hari%20ini`}
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-200/60"
-            title="Chat WhatsApp Maw Cookies"
+            className="hidden lg:inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-colors border border-emerald-200/60"
+            title="Chat WhatsApp Owner Maw Cookies"
           >
             <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-            <span>WhatsApp</span>
+            <span>WA Owner</span>
           </a>
 
           <button

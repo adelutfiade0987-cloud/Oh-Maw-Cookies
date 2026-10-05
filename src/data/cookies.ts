@@ -1,4 +1,14 @@
-import { CookieProduct } from '../types/cookie';
+import { CookieProduct, PlacedOrder } from '../types/cookie';
+
+export const OWNER_CONFIG = {
+  phoneRaw: '+6281295713068',
+  phoneWa: '6281295713068',
+  phoneDisplay: '+62 812-9571-3068',
+  kitchenAddress: 'Jl Sungai Bambu 2B, Tanjung Priok, Jakarta Utara',
+  city: 'Jakarta Utara',
+  adminPin: '1234',
+  openingHours: '10:00 - 20:00 WIB',
+};
 
 export const COOKIE_PRODUCTS: CookieProduct[] = [
   {
@@ -163,5 +173,180 @@ export const REVIEWS = [
     flavor: 'All-Star Box of 5',
     comment: 'Beli yang box isi 5 buat hampers temen kantor, packaging rapi bgt dapet pita sama warming card. Paling juara matchanya, wangi pol!',
     date: 'Minggu lalu',
+  },
+];
+
+export interface MonthlySalesData {
+  monthKey: string;
+  monthName: string;
+  year: number;
+  revenue: number;
+  buyersCount: number;
+  cookiesSold: number;
+  topFlavor: string;
+}
+
+export const HISTORICAL_MONTHLY_SALES: MonthlySalesData[] = [
+  {
+    monthKey: '2026-05',
+    monthName: 'Mei',
+    year: 2026,
+    revenue: 2950000,
+    buyersCount: 88,
+    cookiesSold: 360,
+    topFlavor: 'Clasic Cookie',
+  },
+  {
+    monthKey: '2026-06',
+    monthName: 'Juni',
+    year: 2026,
+    revenue: 3480000,
+    buyersCount: 104,
+    cookiesSold: 425,
+    topFlavor: 'Kuki Monster',
+  },
+  {
+    monthKey: '2026-07',
+    monthName: 'Juli',
+    year: 2026,
+    revenue: 4120000,
+    buyersCount: 122,
+    cookiesSold: 498,
+    topFlavor: 'Red Velvet',
+  },
+  {
+    monthKey: '2026-08',
+    monthName: 'Agustus',
+    year: 2026,
+    revenue: 4650000,
+    buyersCount: 135,
+    cookiesSold: 560,
+    topFlavor: 'Clasic Cookie',
+  },
+  {
+    monthKey: '2026-09',
+    monthName: 'September',
+    year: 2026,
+    revenue: 4920000,
+    buyersCount: 141,
+    cookiesSold: 595,
+    topFlavor: 'Double Choco',
+  },
+  {
+    monthKey: '2026-10',
+    monthName: 'Oktober (Bulan Ini)',
+    year: 2026,
+    revenue: 5380000,
+    buyersCount: 152,
+    cookiesSold: 645,
+    topFlavor: 'Matcha',
+  },
+];
+
+export const INITIAL_RECENT_ORDERS: PlacedOrder[] = [
+  {
+    orderId: 'MAW-83912',
+    createdAt: '05/10/2026 13:45 WIB',
+    items: [
+      {
+        id: 'item-1',
+        type: 'bundle',
+        bundleConfig: {
+          name: 'Box of 5 (All-Star Taster Pack)',
+          items: COOKIE_PRODUCTS.map((c) => ({ cookie: c, count: 1 })),
+          boxNote: 'Buat cemilan kantor',
+        },
+        quantity: 1,
+        unitPrice: 36000,
+      },
+    ],
+    subtotal: 36000,
+    discount: 0,
+    deliveryFee: 12000,
+    total: 48000,
+    customer: {
+      customerName: 'Anindya Putri',
+      phoneNumber: '081289123456',
+      deliveryMethod: 'instant',
+      address: 'Gedung Altira Lt. 12, Jl. Yos Sudarso, Sunter, Jakarta Utara',
+      deliveryDate: 'Hari Ini (Fresh Batch)',
+      deliveryTimeSlot: 'Batch Siang (13:00 - 15:00)',
+      giftCardMessage: '',
+      paymentMethod: 'qris',
+      notes: 'Tolong titip di resepsionis lantai 12',
+    },
+    status: 'baking',
+  },
+  {
+    orderId: 'MAW-83908',
+    createdAt: '05/10/2026 11:20 WIB',
+    items: [
+      {
+        id: 'item-2',
+        type: 'single',
+        product: COOKIE_PRODUCTS[3], // Double choco
+        quantity: 3,
+        unitPrice: 8000,
+      },
+      {
+        id: 'item-3',
+        type: 'single',
+        product: COOKIE_PRODUCTS[4], // Matcha
+        quantity: 2,
+        unitPrice: 9000,
+      },
+    ],
+    subtotal: 42000,
+    discount: 5000,
+    deliveryFee: 0,
+    total: 37000,
+    customer: {
+      customerName: 'Bima Satria',
+      phoneNumber: '087799221100',
+      deliveryMethod: 'pickup',
+      address: 'Ambil di Kitchen Jl Sungai Bambu 2B',
+      deliveryDate: 'Hari Ini (Fresh Batch)',
+      deliveryTimeSlot: 'Batch Siang (13:00 - 15:00)',
+      giftCardMessage: '',
+      paymentMethod: 'bank_transfer',
+      notes: 'Saya ambil jam 13.30 ya kak',
+    },
+    status: 'ready',
+  },
+  {
+    orderId: 'MAW-83894',
+    createdAt: '04/10/2026 16:30 WIB',
+    items: [
+      {
+        id: 'item-4',
+        type: 'single',
+        product: COOKIE_PRODUCTS[1], // Kukimonster
+        quantity: 4,
+        unitPrice: 7000,
+      },
+      {
+        id: 'item-5',
+        type: 'single',
+        product: COOKIE_PRODUCTS[2], // Red velvet
+        quantity: 4,
+        unitPrice: 8000,
+      },
+    ],
+    subtotal: 60000,
+    discount: 5000,
+    deliveryFee: 5000,
+    total: 60000,
+    customer: {
+      customerName: 'Siti Rahmawati',
+      phoneNumber: '085811223344',
+      deliveryMethod: 'instant',
+      address: 'Jl. Swasembada Timur No. 18, Kebon Bawang, Tg Priok',
+      deliveryDate: 'Hari Ini (Fresh Batch)',
+      deliveryTimeSlot: 'Batch Sore (16:00 - 18:00)',
+      giftCardMessage: 'Happy sweet treat buat adik!',
+      paymentMethod: 'cod',
+      notes: 'Rumah pagar hitam',
+    },
+    status: 'completed',
   },
 ];

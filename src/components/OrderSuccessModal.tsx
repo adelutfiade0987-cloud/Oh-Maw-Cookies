@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { CheckCircle2, MessageCircle, Copy, Check, QrCode, Clock, Share2, ChefHat, Sparkles } from 'lucide-react';
+import { CheckCircle2, MessageCircle, Copy, Check, QrCode, Clock, Share2, ChefHat, Sparkles, MapPin } from 'lucide-react';
 import { PlacedOrder } from '../types/cookie';
+import { OWNER_CONFIG } from '../data/cookies';
 
 interface OrderSuccessModalProps {
   order: PlacedOrder | null;
@@ -12,6 +13,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ order, onC
   if (!order) return null;
 
   const [copiedAccount, setCopiedAccount] = useState<string | null>(null);
+  const [copiedBroadcast, setCopiedBroadcast] = useState(false);
   const [isPaidSimulated, setIsPaidSimulated] = useState(false);
 
   useEffect(() => {
@@ -33,7 +35,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ order, onC
     }).format(val);
   };
 
-  // Generate WhatsApp message string
+  // Generate WhatsApp message broadcast string
   const itemsText = order.items
     .map((item, idx) => {
       const name = item.type === 'single' ? item.product?.name : item.bundleConfig?.name;
@@ -41,29 +43,58 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ order, onC
     })
     .join('%0A');
 
-  const waText = `*PESANAN BARU OH MAW COOKIES*%0A--------------------------------%0A` +
-    `*No. Pesanan:* ${order.orderId}%0A` +
-    `*Nama Pemesan:* ${encodeURIComponent(order.customer.customerName)}%0A` +
-    `*WhatsApp:* ${order.customer.phoneNumber}%0A` +
-    `*Metode:* ${order.customer.deliveryMethod.toUpperCase()}%0A` +
-    `*Alamat:* ${encodeURIComponent(order.customer.address || 'Pickup di Kitchen')}%0A` +
-    `*Waktu Batch:* ${encodeURIComponent(order.customer.deliveryDate)} - ${encodeURIComponent(order.customer.deliveryTimeSlot)}%0A%0A` +
-    `*Rincian Menu:*%0A${itemsText}%0A%0A` +
-    `*Subtotal:* ${formatRupiah(order.subtotal)}%0A` +
-    (order.discount > 0 ? `*Diskon:* -${formatRupiah(order.discount)}%0A` : '') +
-    `*Ongkir:* ${formatRupiah(order.deliveryFee)}%0A` +
-    `*TOTAL AKHIR:* ${formatRupiah(order.total)}%0A` +
-    `*Metode Pembayaran:* ${order.customer.paymentMethod.toUpperCase()}%0A` +
-    (order.customer.notes ? `*Catatan:* ${encodeURIComponent(order.customer.notes)}%0A` : '') +
-    `--------------------------------%0A` +
-    `Mohon konfirmasi pesanan saya ya min, terima kasih!`;
+  const waText =
+    `🔔 *NOTIFIKASI / BROADCAST PESANAN BARU OH MAW COOKIES* 🔔%0A` +
+    `--------------------------------------------------%0A` +
+    `📋 *ID Pesanan:* %23${order.orderId}%0A` +
+    `⏰ *Waktu Pemesanan:* ${encodeURIComponent(order.createdAt)}%0A%0A` +
+    `👤 *DATA PEMESAN:*%0A` +
+    `• Nama: ${encodeURIComponent(order.customer.customerName)}%0A` +
+    `• WhatsApp: ${encodeURIComponent(order.customer.phoneNumber)}%0A` +
+    `• Metode: ${order.customer.deliveryMethod === 'pickup' ? 'Ambil Sendiri di Kitchen' : 'Kurir Delivery'}%0A` +
+    `• Alamat: ${encodeURIComponent(order.customer.address || OWNER_CONFIG.kitchenAddress)}%0A` +
+    `• Jadwal Batch: ${encodeURIComponent(order.customer.deliveryDate)} - ${encodeURIComponent(order.customer.deliveryTimeSlot)}%0A%0A` +
+    `🍪 *DETAIL VARIAN COOKIES:*%0A${itemsText}%0A%0A` +
+    `💵 *RINCIAN PEMBAYARAN:*%0A` +
+    `• Subtotal: ${formatRupiah(order.subtotal)}%0A` +
+    (order.discount > 0 ? `• Diskon: -${formatRupiah(order.discount)}%0A` : '') +
+    `• Ongkir: ${formatRupiah(order.deliveryFee)}%0A` +
+    `• *TOTAL AKHIR: ${formatRupiah(order.total)}*%0A` +
+    `• Metode Pembayaran: ${order.customer.paymentMethod.toUpperCase()}%0A` +
+    (order.customer.notes ? `• Catatan: ${encodeURIComponent(order.customer.notes)}%0A` : '') +
+    `--------------------------------------------------%0A` +
+    `Kitchen: ${encodeURIComponent(OWNER_CONFIG.kitchenAddress)}%0A` +
+    `Halo Owner Oh Maw Cookies (${OWNER_CONFIG.phoneDisplay}), pesanan saya ini sudah dibuat melalui website. Mohon dicek ya min, terima kasih!`;
 
-  const waUrl = `https://wa.me/6281234567890?text=${waText}`;
+  const waUrl = `https://wa.me/${OWNER_CONFIG.phoneWa}?text=${waText}`;
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     setCopiedAccount(label);
     setTimeout(() => setCopiedAccount(null), 2500);
+  };
+
+  const handleCopyBroadcast = () => {
+    const rawItems = order.items
+      .map((it, idx) => {
+        const name = it.type === 'single' ? it.product?.name : it.bundleConfig?.name;
+        return `${idx + 1}. ${name} (${it.quantity}x) = ${formatRupiah(it.unitPrice * it.quantity)}`;
+      })
+      .join('\n');
+
+    const rawText =
+      `🔔 BROADCAST PESANAN BARU OH MAW COOKIES 🔔\n` +
+      `No. Pesanan: #${order.orderId}\n` +
+      `Waktu: ${order.createdAt}\n` +
+      `Nama: ${order.customer.customerName} (${order.customer.phoneNumber})\n` +
+      `Alamat: ${order.customer.address || OWNER_CONFIG.kitchenAddress}\n` +
+      `Rincian Menu:\n${rawItems}\n` +
+      `Total: ${formatRupiah(order.total)} (${order.customer.paymentMethod.toUpperCase()})\n` +
+      `Kitchen: ${OWNER_CONFIG.kitchenAddress}`;
+
+    navigator.clipboard.writeText(rawText);
+    setCopiedBroadcast(true);
+    setTimeout(() => setCopiedBroadcast(false), 2500);
   };
 
   return (
@@ -74,19 +105,49 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ order, onC
           <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-inner">
             <CheckCircle2 className="w-8 h-8" />
           </div>
-          <span className="text-xs font-bold uppercase tracking-wider text-amber-800">
-            Order Confirmed · Batch Diproses
+          <span className="text-xs font-bold uppercase tracking-wider text-emerald-800">
+            Pesanan Berhasil Disimpan & Dibuatkan Broadcast
           </span>
           <h2 className="text-2xl font-display font-bold text-stone-900 mt-1">
             Pesanan #{order.orderId} Diterima!
           </h2>
-          <p className="text-xs text-stone-500 mt-1 max-w-sm mx-auto">
-            Terima kasih kak <strong className="text-stone-800">{order.customer.customerName}</strong>! Cookies lezatmu sedang dipersiapkan oleh tim Maw Cookies.
+          <p className="text-xs text-stone-600 mt-1 max-w-sm mx-auto">
+            Terima kasih kak <strong className="text-stone-900">{order.customer.customerName}</strong>! Notifikasi broadcast pesanan ditujukan langsung ke WhatsApp Owner ({OWNER_CONFIG.phoneDisplay}).
           </p>
         </div>
 
         {/* Content Body */}
         <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 text-xs">
+          {/* WhatsApp Owner Callout */}
+          <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                <MessageCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="font-bold text-emerald-950 text-sm">WhatsApp Owner Dituju</div>
+                <div className="text-[11px] text-emerald-800 font-mono">{OWNER_CONFIG.phoneDisplay}</div>
+              </div>
+            </div>
+
+            <button
+              onClick={handleCopyBroadcast}
+              className="px-3 py-1.5 bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              {copiedBroadcast ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copiedBroadcast ? 'Tersalin' : 'Salin BC'}</span>
+            </button>
+          </div>
+
+          {/* Kitchen Address Notice */}
+          <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 text-stone-600 flex items-start gap-2">
+            <MapPin className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <strong className="text-stone-800 block text-xs">Lokasi Kitchen & Pickup:</strong>
+              <span>{OWNER_CONFIG.kitchenAddress}</span>
+            </div>
+          </div>
+
           {/* Live Order Tracker */}
           <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200/80">
             <div className="flex items-center justify-between mb-3 text-stone-700 font-semibold">
@@ -134,8 +195,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ order, onC
                 <QrCode className="w-4 h-4 text-[#2C5282]" />
                 <span>Pindai QRIS Resmi Oh Maw Cookies</span>
               </div>
-              <div className="w-44 h-44 mx-auto bg-white p-3 rounded-xl border border-stone-300 shadow-sm flex flex-col items-center justify-center">
-                {/* Simulated dynamic QR Code */}
+              <div className="w-40 h-40 mx-auto bg-white p-3 rounded-xl border border-stone-300 shadow-sm flex flex-col items-center justify-center">
                 <svg viewBox="0 0 100 100" className="w-full h-full text-stone-900">
                   <path
                     fill="currentColor"
@@ -148,7 +208,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ order, onC
                 {formatRupiah(order.total)}
               </div>
               <p className="text-[11px] text-stone-500">
-                Mendukung Gopay, ShopeePay, OVO, Dana, LinkAja & Seluruh Mobile Banking
+                Mendukung Gopay, ShopeePay, OVO, Dana, BCA Mobile & Semua Bank
               </p>
               {!isPaidSimulated ? (
                 <button
@@ -161,7 +221,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ order, onC
               ) : (
                 <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
                   <Check className="w-4 h-4" />
-                  <span>Bukti bayar tercatat otomatis!</span>
+                  <span>Bukti bayar tersimpan!</span>
                 </div>
               )}
             </div>
@@ -192,13 +252,13 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ order, onC
 
           {order.customer.paymentMethod === 'cod' && (
             <div className="p-3.5 bg-amber-50 rounded-2xl border border-amber-200/80 text-amber-900 text-xs">
-              💵 <strong>Cash on Delivery (COD):</strong> Mohon siapkan uang pas sebesar <strong>{formatRupiah(order.total)}</strong> saat kurir mengantarkan cookies ke alamatmu.
+              💵 <strong>Cash on Delivery (COD):</strong> Mohon siapkan uang pas sebesar <strong>{formatRupiah(order.total)}</strong> saat kurir tiba di alamatmu.
             </div>
           )}
 
           {/* Itemized Receipt Details */}
           <div className="border border-stone-200 rounded-2xl p-4 bg-white space-y-2">
-            <span className="font-bold text-stone-800 block text-xs">Ringkasan Pesanan:</span>
+            <span className="font-bold text-stone-800 block text-xs">Ringkasan Menu Pesanan:</span>
             {order.items.map((it) => (
               <div key={it.id} className="flex justify-between text-stone-600 text-[11px]">
                 <span>
@@ -225,14 +285,14 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ order, onC
             className="w-full sm:flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs sm:text-sm shadow-md transition-all active:scale-98 flex items-center justify-center gap-2"
           >
             <MessageCircle className="w-4 h-4" />
-            <span>Kirim Bukti / Chat WhatsApp</span>
+            <span>Kirim Broadcast ke WA Owner ({OWNER_CONFIG.phoneDisplay})</span>
           </a>
 
           <button
             onClick={onClose}
             className="w-full sm:w-auto px-5 py-3 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl font-semibold text-xs sm:text-sm transition-colors cursor-pointer"
           >
-            Kembali ke Toko
+            Tutup
           </button>
         </div>
       </div>
