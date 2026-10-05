@@ -16,6 +16,9 @@ import {
   FileSpreadsheet,
   ChevronRight,
   Filter,
+  Download,
+  FileText,
+  CheckCircle2,
 } from 'lucide-react';
 import { PlacedOrder } from '../types/cookie';
 import { OWNER_CONFIG, HISTORICAL_MONTHLY_SALES, MonthlySalesData } from '../data/cookies';
@@ -39,6 +42,12 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
   const [selectedOrderForBc, setSelectedOrderForBc] = useState<PlacedOrder | null>(null);
   const [copiedOrderId, setCopiedOrderId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [downloadSuccessToast, setDownloadSuccessToast] = useState<string | null>(null);
+
+  const showDownloadNotice = (msg: string) => {
+    setDownloadSuccessToast(msg);
+    setTimeout(() => setDownloadSuccessToast(null), 3000);
+  };
 
   // Format currency helper
   const formatRupiah = (val: number) => {
@@ -122,8 +131,122 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
     setTimeout(() => setCopiedOrderId(null), 2500);
   };
 
+  // 1. Export Orders to CSV (Excel compatible with UTF-8 BOM)
+  const handleDownloadOrdersCsv = () => {
+    const headers = [
+      'No Pesanan',
+      'Waktu Pemesanan',
+      'Nama Pemesan',
+      'Nomor WhatsApp',
+      'Metode Pengiriman',
+      'Alamat Pengiriman',
+      'Jadwal Batch',
+      'Rincian Menu',
+      'Subtotal (IDR)',
+      'Diskon (IDR)',
+      'Ongkir (IDR)',
+      'Total Pembayaran (IDR)',
+      'Metode Pembayaran',
+      'Status Pesanan',
+      'Catatan',
+    ];
+
+    const rows = orders.map((o) => {
+      const itemsDetail = o.items
+        .map((it) => {
+          const name = it.type === 'single' ? it.product?.name : it.bundleConfig?.name;
+          return `${it.quantity}x ${name}`;
+        })
+        .join('; ');
+
+      const deliveryDesc = o.customer.deliveryMethod === 'pickup' ? 'Ambil di Kitchen' : 'Kurir Delivery';
+
+      return [
+        `"${o.orderId}"`,
+        `"${o.createdAt}"`,
+        `"${o.customer.customerName.replace(/"/g, '""')}"`,
+        `"${o.customer.phoneNumber}"`,
+        `"${deliveryDesc}"`,
+        `"${(o.customer.address || OWNER_CONFIG.kitchenAddress).replace(/"/g, '""')}"`,
+        `"${o.customer.deliveryDate} - ${o.customer.deliveryTimeSlot}"`,
+        `"${itemsDetail.replace(/"/g, '""')}"`,
+        o.subtotal,
+        o.discount,
+        o.deliveryFee,
+        o.total,
+        `"${o.customer.paymentMethod.toUpperCase()}"`,
+        `"${o.status.toUpperCase()}"`,
+        `"${(o.customer.notes || '-').replace(/"/g, '""')}"`,
+      ].join(',');
+    });
+
+    // Add UTF-8 BOM \uFEFF for seamless Excel & Sheets opening
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Laporan_Penjualan_Maw_Cookies_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showDownloadNotice('✓ Laporan seluruh pesanan berhasil diunduh (Excel / CSV)!');
+  };
+
+  // 2. Export Monthly Sales Summary to CSV
+  const handleDownloadMonthlySummaryCsv = () => {
+    const headers = [
+      'Periode Bulan',
+      'Tahun',
+      'Pemasukan Kotor (IDR)',
+      'Jumlah Pembeli / Transaksi',
+      'Cookies Terjual (Pcs)',
+      'Rata-rata Order (AOV)',
+      'Varian Paling Diminati',
+    ];
+
+    const rows = HISTORICAL_MONTHLY_SALES.map((m) => {
+      const isCurrent = m.monthKey === '2026-10';
+      const rev = isCurrent ? liveMonthRevenue : m.revenue;
+      const buyers = isCurrent ? liveMonthBuyers : m.buyersCount;
+      const cookies = isCurrent ? liveMonthCookies : m.cookiesSold;
+      const aov = Math.round(rev / Math.max(1, buyers));
+
+      return [
+        `"${m.monthName}"`,
+        m.year,
+        rev,
+        buyers,
+        cookies,
+        aov,
+        `"${m.topFlavor}"`,
+      ].join(',');
+    });
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Rekapitulasi_Bulanan_Maw_Cookies_${new Date().getFullYear()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showDownloadNotice('✓ Rekapitulasi penjualan bulanan berhasil diunduh!');
+  };
+
   return (
     <div className="min-h-screen bg-[#F8F9FA] text-stone-900 pb-20">
+      {/* Toast Notice for Download */}
+      {downloadSuccessToast && (
+        <div className="fixed top-20 right-4 z-50 bg-stone-900 text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-xl border border-stone-700 flex items-center gap-2 animate-in slide-in-from-top-3 duration-200">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <span>{downloadSuccessToast}</span>
+        </div>
+      )}
+
       {/* Top Bar for Owner Portal */}
       <header className="sticky top-0 z-30 bg-white border-b border-stone-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
@@ -141,13 +264,24 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Download Sales Report Button in Header */}
+            <button
+              onClick={handleDownloadOrdersCsv}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/90 rounded-xl transition-all shadow-2xs cursor-pointer active:scale-95"
+              title="Download Data Penjualan Lengkap (Format CSV/Excel)"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="hidden md:inline">Download Hasil Penjualan</span>
+              <span className="md:hidden">Unduh Data</span>
+            </button>
+
             <button
               onClick={onSwitchToBuyerMode}
               className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-xl transition-colors cursor-pointer"
             >
               <Store className="w-4 h-4 text-amber-600" />
-              <span>Lihat Toko (Mode Pembeli)</span>
+              <span className="hidden sm:inline">Lihat Toko (Mode Pembeli)</span>
             </button>
 
             <button
@@ -286,7 +420,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
               </h3>
             </div>
 
-            <div className="flex items-center gap-3 text-xs">
+            <div className="flex flex-wrap items-center gap-3 text-xs">
               <div className="flex items-center gap-1.5">
                 <span className="w-3 h-3 bg-[#2C5282] rounded-sm" />
                 <span className="text-stone-600">Pemasukan (Rp)</span>
@@ -295,6 +429,14 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                 <span className="w-3 h-3 bg-amber-400 rounded-full" />
                 <span className="text-stone-600">Jumlah Pembeli</span>
               </div>
+              <button
+                onClick={handleDownloadMonthlySummaryCsv}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80 rounded-xl font-semibold transition-colors cursor-pointer text-xs"
+                title="Unduh Rekap Penjualan Bulanan (CSV)"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-amber-700" />
+                <span>Unduh Rekap Bulanan (.csv)</span>
+              </button>
             </div>
           </div>
 
@@ -424,8 +566,18 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
               </h3>
             </div>
 
-            {/* Status Filter */}
-            <div className="flex items-center gap-1.5 bg-stone-100 p-1 rounded-xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={handleDownloadOrdersCsv}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/90 rounded-xl font-semibold transition-colors cursor-pointer text-xs"
+                title="Unduh Seluruh Data Pesanan Masuk (Excel / CSV)"
+              >
+                <Download className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Unduh Data Pesanan (.csv)</span>
+              </button>
+
+              {/* Status Filter */}
+              <div className="flex items-center gap-1.5 bg-stone-100 p-1 rounded-xl">
               {['all', 'received', 'baking', 'ready', 'completed'].map((st) => (
                 <button
                   key={st}
@@ -447,6 +599,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({
                     : 'Selesai'}
                 </button>
               ))}
+              </div>
             </div>
           </div>
 

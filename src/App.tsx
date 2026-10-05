@@ -270,6 +270,32 @@ export default function App() {
         </div>
       )}
 
+      {/* Top Access Distinction Bar (Membedakan Akses Pembeli vs Akses Owner) */}
+      <div className="bg-[#1F1C1A] text-stone-300 text-xs py-2 px-4 border-b border-stone-800">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px]">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-950/80 text-emerald-400 border border-emerald-800/80 font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Mode Pembeli (Belanja Cookies)
+            </span>
+            <span className="text-stone-400 hidden md:inline">
+              Kitchen: {OWNER_CONFIG.kitchenAddress}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className="text-stone-400">Khusus Pemilik Toko?</span>
+            <button
+              onClick={handleOpenOwnerPortal}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 hover:text-amber-200 border border-amber-500/40 rounded-lg font-semibold transition-all cursor-pointer shadow-2xs"
+            >
+              <Lock className="w-3 h-3 text-amber-400" />
+              <span>Masuk Portal Owner (PIN: MCookies 223)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Top Bar Header */}
       <Navbar
         cartCount={totalCartCount}

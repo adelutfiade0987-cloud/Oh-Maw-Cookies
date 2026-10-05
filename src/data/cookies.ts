@@ -6,7 +6,7 @@ export const OWNER_CONFIG = {
   phoneDisplay: '+62 812-9571-3068',
   kitchenAddress: 'Jl Sungai Bambu 2B, Tanjung Priok, Jakarta Utara',
   city: 'Jakarta Utara',
-  adminPin: '1234',
+  adminPin: 'MCookies 223',
   openingHours: '10:00 - 20:00 WIB',
 };
 
